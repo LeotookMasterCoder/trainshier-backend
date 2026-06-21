@@ -8,6 +8,7 @@ import com.trainshier.dto.LoginResponseDTO;
 import com.trainshier.dto.MessageResponseDTO;
 import com.trainshier.dto.RefreshTokenResponseDTO;
 import com.trainshier.dto.RegisterRequestDTO;
+import com.trainshier.dto.RecoverPasswordRequestDTO;
 import com.trainshier.dto.RfidLoginRequestDTO;
 import com.trainshier.service.AuthService;
 
@@ -70,6 +71,22 @@ public class AuthController {
 
         LoginResponseDTO response =
                 authService.rfidLogin(request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Recovers password for a user.
+     *
+     * @param request recover password request DTO
+     * @return response message
+     */
+    @PostMapping("/recover-password")
+    public ResponseEntity<MessageResponseDTO> recoverPassword(
+            @RequestBody RecoverPasswordRequestDTO request) {
+
+        MessageResponseDTO response =
+                authService.recoverPassword(request);
 
         return ResponseEntity.ok(response);
     }

@@ -10,6 +10,7 @@ import com.trainshier.dto.LoginResponseDTO;
 import com.trainshier.dto.MessageResponseDTO;
 import com.trainshier.dto.RefreshTokenResponseDTO;
 import com.trainshier.dto.RegisterRequestDTO;
+import com.trainshier.dto.RecoverPasswordRequestDTO;
 import com.trainshier.dto.RfidLoginRequestDTO;
 import com.trainshier.entity.User;
 import com.trainshier.enums.UserRole;
@@ -137,6 +138,42 @@ public class AuthService {
         response.setName(user.getName());
         response.setRole(user.getRole().name());
 
+        return response;
+    }
+
+    /**
+     * Recovers/resets user password.
+     *
+     * @param request recover password request DTO
+     * @return response message
+     */
+    public MessageResponseDTO recoverPassword(RecoverPasswordRequestDTO request) {
+        Optional<User> optionalUser =
+                userRepository.findByEmail(request.getEmail());
+
+        if (optionalUser.isEmpty()) {
+            throw new RuntimeException("Usuario no encontrado");
+        }
+
+        User user = optionalUser.get();
+        // Encrypt the new password securely
+        String encryptedPassword = passwordEncoder.encode(request.getNewPassword());
+        user.setPassword(encryptedPassword);
+        userRepository.save(user);
+
+        // Simulate sending password recovery email
+        System.out.println("==================================================");
+        System.out.println("📨 CORREO ELECTRÓNICO ENVIADO (SIMULADO)");
+        System.out.println("Destinatario: " + user.getEmail());
+        System.out.println("Asunto: Restablecimiento de contraseña TrainShier");
+        System.out.println("Mensaje: Estimado/a " + user.getName() + ",");
+        System.out.println("Tu contraseña ha sido actualizada con éxito.");
+        System.out.println("Detalles Técnicos de Seguridad:");
+        System.out.println(" - Contraseña cifrada en DB: " + encryptedPassword);
+        System.out.println("==================================================");
+
+        MessageResponseDTO response = new MessageResponseDTO();
+        response.setMessage("Contraseña restablecida y guardada correctamente. Se envió confirmación al correo.");
         return response;
     }
 
