@@ -38,4 +38,7 @@ public class User {
 
     @Column(name = "fecha_registro", nullable = false, insertable = false, updatable = false)
     private java.time.LocalDate registrationDate;
+
+    @Column(name = "rfid_uid", unique = true)
+    private String rfidUid;
 }

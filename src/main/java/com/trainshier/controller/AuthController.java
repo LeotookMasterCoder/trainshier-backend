@@ -8,6 +8,7 @@ import com.trainshier.dto.LoginResponseDTO;
 import com.trainshier.dto.MessageResponseDTO;
 import com.trainshier.dto.RefreshTokenResponseDTO;
 import com.trainshier.dto.RegisterRequestDTO;
+import com.trainshier.dto.RfidLoginRequestDTO;
 import com.trainshier.service.AuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -53,6 +54,22 @@ public class AuthController {
 
         LoginResponseDTO response =
                 authService.login(request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Authenticates a user using RFID.
+     *
+     * @param request RFID login request
+     * @return login response
+     */
+    @PostMapping("/rfid-login")
+    public ResponseEntity<LoginResponseDTO> rfidLogin(
+            @RequestBody RfidLoginRequestDTO request) {
+
+        LoginResponseDTO response =
+                authService.rfidLogin(request);
 
         return ResponseEntity.ok(response);
     }

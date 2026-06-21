@@ -10,6 +10,7 @@ import com.trainshier.dto.LoginResponseDTO;
 import com.trainshier.dto.MessageResponseDTO;
 import com.trainshier.dto.RefreshTokenResponseDTO;
 import com.trainshier.dto.RegisterRequestDTO;
+import com.trainshier.dto.RfidLoginRequestDTO;
 import com.trainshier.entity.User;
 import com.trainshier.enums.UserRole;
 import com.trainshier.repository.UserRepository;
@@ -100,6 +101,37 @@ public class AuthService {
 
         LoginResponseDTO response = new LoginResponseDTO();
         response.setMessage("Login successful");
+        response.setToken(token);
+        response.setUserId(user.getId());
+        response.setName(user.getName());
+        response.setRole(user.getRole().name());
+
+        return response;
+    }
+
+    /**
+     * Login user using RFID card.
+     *
+     * @param request RFID login request
+     * @return login response
+     */
+    public LoginResponseDTO rfidLogin(RfidLoginRequestDTO request) {
+        Optional<User> optionalUser =
+                userRepository.findByRfidUid(request.getRfidUid());
+
+        if (optionalUser.isEmpty()) {
+            throw new RuntimeException("Tarjeta RFID no asociada a ningún usuario");
+        }
+
+        User user = optionalUser.get();
+
+        String token = jwtService.generateToken(
+                user.getId(),
+                user.getName(),
+                user.getRole().name());
+
+        LoginResponseDTO response = new LoginResponseDTO();
+        response.setMessage("Login successful via RFID");
         response.setToken(token);
         response.setUserId(user.getId());
         response.setName(user.getName());
