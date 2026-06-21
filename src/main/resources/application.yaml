@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+security:
+  jwt:
+    secret-key: trainshier-secret-key-trainshier-secret-key-2026
+    token-expiration: 86400000
+
+spring:
+  datasource:
+    url: jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:5432/postgres?stringtype=unspecified
+    username: postgres.xraxenoollrlkxgmzcdn
+    password: m1nt3st.c0m
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
