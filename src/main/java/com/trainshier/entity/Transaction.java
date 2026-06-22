@@ -35,6 +35,6 @@ public class Transaction {
     private LocalDateTime date;
 
     @ManyToOne
-    @JoinColumn(name = "acceso_id", nullable = false)
+    @JoinColumn(name = "acceso_id", nullable = true)
     private SessionAccess access;
 }
