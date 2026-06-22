@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import com.trainshier.dto.MessageResponseDTO;
 import com.trainshier.dto.UserRequestDTO;
 import com.trainshier.dto.UserResponseDTO;
+import com.trainshier.dto.UpdateUserRequestDTO;
 import com.trainshier.service.UserService;
 
 import lombok.RequiredArgsConstructor;
@@ -56,5 +57,20 @@ public class UserController {
             @PathVariable Long id) {
 
         return userService.findById(id);
+    }
+
+    /**
+     * Update user by id.
+     *
+     * @param id user identifier
+     * @param request update request DTO
+     * @return updated user details DTO
+     */
+    @PutMapping("/{id}")
+    public UserResponseDTO updateUser(
+            @PathVariable Long id,
+            @RequestBody UpdateUserRequestDTO request) {
+
+        return userService.updateUser(id, request);
     }
 }

@@ -1,6 +1,7 @@
 package com.trainshier.service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.trainshier.dto.MessageResponseDTO;
 import com.trainshier.dto.UserRequestDTO;
 import com.trainshier.dto.UserResponseDTO;
+import com.trainshier.dto.UpdateUserRequestDTO;
 import com.trainshier.entity.User;
 import com.trainshier.repository.UserRepository;
 
@@ -74,6 +76,31 @@ public class UserService {
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "User not found"));
+
+        return mapToDTO(user);
+    }
+
+    /**
+     * Update user details (profile).
+     *
+     * @param id user identifier
+     * @param request update request
+     * @return updated user dto
+     */
+    public UserResponseDTO updateUser(Long id, UpdateUserRequestDTO request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "User not found"));
+
+        Optional<User> existingEmailUser = userRepository.findByEmail(request.getEmail());
+        if (existingEmailUser.isPresent() && !existingEmailUser.get().getId().equals(id)) {
+            throw new RuntimeException("Email already taken by another user");
+        }
+
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        userRepository.save(user);
 
         return mapToDTO(user);
     }
