@@ -21,7 +21,88 @@ public class GeminiService {
     @Value("${gemini.api-key:}")
     private String apiKey;
 
+    @Value("classpath:knowledge.txt")
+    private org.springframework.core.io.Resource knowledgeResource;
+
+    private String knowledgeBase = null;
+
     private final RestTemplate restTemplate = new RestTemplate();
+
+    private synchronized String getKnowledgeBase() {
+        if (knowledgeBase == null) {
+            try {
+                if (knowledgeResource != null && knowledgeResource.exists()) {
+                    java.io.InputStream is = knowledgeResource.getInputStream();
+                    knowledgeBase = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                } else {
+                    knowledgeBase = "INSTRUCCIONES DE SISTEMA:\nEres el Asistente de TrainShier. Responde preguntas sobre TrainShier y el simulador de POS. No hables de nada ajeno.";
+                }
+            } catch (Exception e) {
+                log.error("Failed to load knowledge.txt", e);
+                knowledgeBase = "Error al cargar la documentación de TrainShier.";
+            }
+        }
+        return knowledgeBase;
+    }
+
+    public String generateAssistantResponse(String message) {
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            log.info("No Gemini API key found. Using simulated assistant response.");
+            return "Lo siento, la API Key de Gemini no está configurada, por lo que el asistente interactivo está deshabilitado en este momento. Por favor revisa el manual de operaciones o contacta al administrador.";
+        }
+
+        try {
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+
+            String systemInstructions = getKnowledgeBase();
+
+            // Construct payload manually
+            Map<String, Object> requestBody = new HashMap<>();
+            
+            Map<String, Object> contentMap = new HashMap<>();
+            Map<String, Object> partMap = new HashMap<>();
+            partMap.put("text", systemInstructions + "\n\nMensaje del usuario: " + message + "\n\nRespuesta del asistente:");
+            contentMap.put("parts", List.of(partMap));
+            requestBody.put("contents", List.of(contentMap));
+
+            Map<String, Object> configMap = new HashMap<>();
+            configMap.put("maxOutputTokens", 500);
+            configMap.put("temperature", 0.3);
+            requestBody.put("generationConfig", configMap);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            ResponseEntity<Map> responseEntity = restTemplate.postForEntity(url, entity, Map.class);
+
+            if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
+                Map responseBody = responseEntity.getBody();
+                List candidates = (List) responseBody.get("candidates");
+                if (candidates != null && !candidates.isEmpty()) {
+                    Map candidate = (Map) candidates.get(0);
+                    Map content = (Map) candidate.get("content");
+                    if (content != null) {
+                        List parts = (List) content.get("parts");
+                        if (parts != null && !parts.isEmpty()) {
+                            Map part = (Map) parts.get(0);
+                            String text = (String) part.get("text");
+                            if (text != null) {
+                                return text.replace("\"", "")
+                                           .replace("'", "")
+                                           .replace("*", "")
+                                           .trim();
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error calling Gemini API for assistant: {}", e.getMessage());
+        }
+
+        return "Lo siento, ha ocurrido un error al procesar tu consulta con el asistente virtual de TrainShier.";
+    }
 
     public String generateCustomerResponse(String customerName, String mood, String difficulty, String cartProducts, int patience, String message) {
         // Fallback if no API Key is provided

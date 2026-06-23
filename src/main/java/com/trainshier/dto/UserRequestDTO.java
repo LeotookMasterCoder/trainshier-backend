@@ -35,4 +35,9 @@ public class UserRequestDTO {
      * User role.
      */
     private UserRole role;
+
+    /**
+     * User RFID UID.
+     */
+    private String rfidUid;
 }
