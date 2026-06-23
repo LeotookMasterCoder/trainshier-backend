@@ -6,6 +6,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.JdbcTemplate;
+import com.trainshier.enums.UserRole;
 
 import com.trainshier.dto.MessageResponseDTO;
 import com.trainshier.dto.UserRequestDTO;
@@ -25,6 +27,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     /**
      * Create user.
@@ -44,6 +47,7 @@ public class UserService {
                         request.getPassword()));
 
         user.setRole(request.getRole());
+        user.setRfidUid(request.getRfidUid());
 
         userRepository.save(user);
 
@@ -106,6 +110,69 @@ public class UserService {
     }
 
     /**
+     * Create instructor by administrator.
+     */
+    public MessageResponseDTO createInstructor(UserRequestDTO request) {
+        Optional<User> existing = userRepository.findByEmail(request.getEmail());
+        if (existing.isPresent()) {
+            throw new RuntimeException("El correo ya está registrado");
+        }
+        User user = new User();
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(UserRole.INSTRUCTOR);
+        user.setRfidUid(request.getRfidUid());
+        userRepository.save(user);
+        return new MessageResponseDTO("Instructor creado con éxito");
+    }
+
+    /**
+     * Delete user by id (cascades via DB trigger).
+     */
+    public MessageResponseDTO deleteUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        userRepository.delete(user);
+        return new MessageResponseDTO("Usuario eliminado con éxito");
+    }
+
+    /**
+     * Update user details as Administrator.
+     */
+    public UserResponseDTO updateUserAdmin(Long id, UpdateUserRequestDTO request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        Optional<User> existingEmailUser = userRepository.findByEmail(request.getEmail());
+        if (existingEmailUser.isPresent() && !existingEmailUser.get().getId().equals(id)) {
+            throw new RuntimeException("El correo ya está registrado por otro usuario");
+        }
+
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        if (request.getRole() != null) {
+            user.setRole(request.getRole());
+        }
+        user.setRfidUid(request.getRfidUid());
+        userRepository.save(user);
+
+        return mapToDTO(user);
+    }
+
+    /**
+     * Truncate and reset all training statistics.
+     */
+    public MessageResponseDTO truncateTrainingData() {
+        try {
+            jdbcTemplate.execute("TRUNCATE TABLE pagos_transaccion, detalle_transaccion, errores_simulacion, comentarios_instructor, transacciones, accesos_sesion, reports, sesiones_simulacion RESTART IDENTITY CASCADE;");
+            return new MessageResponseDTO("Tablas de entrenamiento reiniciadas con éxito");
+        } catch (Exception e) {
+            throw new RuntimeException("Error al reiniciar las tablas de entrenamiento: " + e.getMessage());
+        }
+    }
+
+    /**
      * Map entity to dto.
      *
      * @param user user entity
@@ -118,7 +185,8 @@ public class UserService {
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
-                user.getRole()
+                user.getRole(),
+                user.getRfidUid()
         );
     }
 }

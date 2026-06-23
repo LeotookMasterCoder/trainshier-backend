@@ -22,4 +22,14 @@ public class UpdateUserRequestDTO {
     @Email(message = "Invalid email")
     @NotBlank(message = "Email is required")
     private String email;
+
+    /**
+     * User role.
+     */
+    private com.trainshier.enums.UserRole role;
+
+    /**
+     * User RFID UID.
+     */
+    private String rfidUid;
 }

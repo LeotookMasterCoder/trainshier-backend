@@ -73,4 +73,39 @@ public class UserController {
 
         return userService.updateUser(id, request);
     }
+
+    /**
+     * Create instructor account.
+     */
+    @PostMapping("/instructors")
+    public MessageResponseDTO createInstructor(
+            @RequestBody UserRequestDTO request) {
+        return userService.createInstructor(request);
+    }
+
+    /**
+     * Update user details as Administrator (includes role and rfidUid).
+     */
+    @PutMapping("/{id}/admin")
+    public UserResponseDTO updateUserAdmin(
+            @PathVariable Long id,
+            @RequestBody UpdateUserRequestDTO request) {
+        return userService.updateUserAdmin(id, request);
+    }
+
+    /**
+     * Delete user by id (cascading).
+     */
+    @DeleteMapping("/{id}")
+    public MessageResponseDTO deleteUser(@PathVariable Long id) {
+        return userService.deleteUser(id);
+    }
+
+    /**
+     * Truncate and reset training tables.
+     */
+    @PostMapping("/truncate")
+    public MessageResponseDTO truncateTrainingData() {
+        return userService.truncateTrainingData();
+    }
 }

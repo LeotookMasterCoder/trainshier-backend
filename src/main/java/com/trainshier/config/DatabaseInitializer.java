@@ -36,6 +36,87 @@ public class DatabaseInitializer implements CommandLineRunner {
             log.error("Could not add rfid_uid column via ALTER TABLE: {}", e.getMessage());
         }
 
+        // 1.5. Ensure cascading delete function and trigger exist
+        try {
+            log.info("Creating BEFORE DELETE trigger and helper function for table 'usuarios'...");
+            jdbcTemplate.execute(
+                "CREATE OR REPLACE FUNCTION trg_clean_user_data() " +
+                "RETURNS TRIGGER AS $$ " +
+                "BEGIN " +
+                "    DELETE FROM pagos_transaccion WHERE transaccion_id IN ( " +
+                "        SELECT t.id FROM transacciones t  " +
+                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
+                "        WHERE a.aprendiz_id = OLD.id_usuario " +
+                "    ); " +
+                "    DELETE FROM detalle_transaccion WHERE transaccion_id IN ( " +
+                "        SELECT t.id FROM transacciones t  " +
+                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
+                "        WHERE a.aprendiz_id = OLD.id_usuario " +
+                "    ); " +
+                "    DELETE FROM errores_simulacion WHERE transaccion_id IN ( " +
+                "        SELECT t.id FROM transacciones t  " +
+                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
+                "        WHERE a.aprendiz_id = OLD.id_usuario " +
+                "    ); " +
+                "    DELETE FROM comentarios_instructor WHERE transaccion_id IN ( " +
+                "        SELECT t.id FROM transacciones t  " +
+                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
+                "        WHERE a.aprendiz_id = OLD.id_usuario " +
+                "    ); " +
+                "    DELETE FROM transacciones WHERE acceso_id IN ( " +
+                "        SELECT a.id_acceso FROM accesos_sesion a WHERE a.aprendiz_id = OLD.id_usuario " +
+                "    ); " +
+                "    DELETE FROM accesos_sesion WHERE aprendiz_id = OLD.id_usuario; " +
+                "    DELETE FROM reports WHERE user_id = OLD.id_usuario; " +
+                "    DELETE FROM pagos_transaccion WHERE transaccion_id IN ( " +
+                "        SELECT t.id FROM transacciones t  " +
+                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
+                "        JOIN sesiones_simulacion s ON a.sesion_id = s.id_sesion " +
+                "        WHERE s.instructor_id = OLD.id_usuario " +
+                "    ); " +
+                "    DELETE FROM detalle_transaccion WHERE transaccion_id IN ( " +
+                "        SELECT t.id FROM transacciones t  " +
+                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
+                "        JOIN sesiones_simulacion s ON a.sesion_id = s.id_sesion " +
+                "        WHERE s.instructor_id = OLD.id_usuario " +
+                "    ); " +
+                "    DELETE FROM errores_simulacion WHERE transaccion_id IN ( " +
+                "        SELECT t.id FROM transacciones t  " +
+                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
+                "        JOIN sesiones_simulacion s ON a.sesion_id = s.id_sesion " +
+                "        WHERE s.instructor_id = OLD.id_usuario " +
+                "    ); " +
+                "    DELETE FROM comentarios_instructor WHERE transaccion_id IN ( " +
+                "        SELECT t.id FROM transacciones t  " +
+                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
+                "        JOIN sesiones_simulacion s ON a.sesion_id = s.id_sesion " +
+                "        WHERE s.instructor_id = OLD.id_usuario " +
+                "    ); " +
+                "    DELETE FROM transacciones WHERE acceso_id IN ( " +
+                "        SELECT a.id_acceso FROM accesos_sesion a " +
+                "        JOIN sesiones_simulacion s ON a.sesion_id = s.id_sesion " +
+                "        WHERE s.instructor_id = OLD.id_usuario " +
+                "    ); " +
+                "    DELETE FROM accesos_sesion WHERE sesion_id IN ( " +
+                "        SELECT s.id_sesion FROM sesiones_simulacion s WHERE s.instructor_id = OLD.id_usuario " +
+                "    ); " +
+                "    DELETE FROM comentarios_instructor WHERE instructor_id = OLD.id_usuario; " +
+                "    DELETE FROM sesiones_simulacion WHERE instructor_id = OLD.id_usuario; " +
+                "    RETURN OLD; " +
+                "END; " +
+                "$$ LANGUAGE plpgsql;"
+            );
+            jdbcTemplate.execute(
+                "CREATE OR REPLACE TRIGGER trg_before_delete_usuarios " +
+                "BEFORE DELETE ON usuarios " +
+                "FOR EACH ROW " +
+                "EXECUTE FUNCTION trg_clean_user_data();"
+            );
+            log.info("Trigger and function created successfully!");
+        } catch (Exception e) {
+            log.error("Could not create before delete trigger on 'usuarios': {}", e.getMessage());
+        }
+
         // 2. Seed demo accounts if they don't exist
         ensureDemoUser("aprendiz@trainshier.com", "Aprendiz Caja POS", "Aprendiz123*", UserRole.APPRENTICE, "1029384756");
         ensureDemoUser("instructor@trainshier.com", "Instructor Formación", "Instructor123*", UserRole.INSTRUCTOR, "5678901234");
