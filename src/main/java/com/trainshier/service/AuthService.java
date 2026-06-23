@@ -66,6 +66,7 @@ public class AuthService {
         userRepository.save(user);
 
         MessageResponseDTO response = new MessageResponseDTO();
+
         response.setMessage("User registered successfully");
 
         return response;
@@ -148,6 +149,7 @@ public class AuthService {
      * @return response message
      */
     public MessageResponseDTO recoverPassword(RecoverPasswordRequestDTO request) {
+
         Optional<User> optionalUser =
                 userRepository.findByEmail(request.getEmail());
 
@@ -161,7 +163,6 @@ public class AuthService {
         user.setPassword(encryptedPassword);
         userRepository.save(user);
 
-        // Simulate sending password recovery email
         System.out.println("==================================================");
         System.out.println("📨 CORREO ELECTRÓNICO ENVIADO (SIMULADO)");
         System.out.println("Destinatario: " + user.getEmail());
@@ -175,6 +176,7 @@ public class AuthService {
         MessageResponseDTO response = new MessageResponseDTO();
         response.setMessage("Contraseña restablecida y guardada correctamente. Se envió confirmación al correo.");
         return response;
+
     }
 
     /**
