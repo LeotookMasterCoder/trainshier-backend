@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "errores_simulacion")
+@Table(name = "simulation_errors")
 @Data
 public class SimulationError {
 
@@ -15,17 +15,17 @@ public class SimulationError {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "descripcion")
+    @Column(name = "description")
     private String description;
 
-    @Column(name = "ocurrido_en")
+    @Column(name = "occurred_at")
     private LocalDateTime occurredAt;
 
     @ManyToOne
-    @JoinColumn(name = "transaccion_id")
+    @JoinColumn(name = "transaction_id")
     private Transaction transaction;
 
     @ManyToOne
-    @JoinColumn(name = "catalogo_error_id")
+    @JoinColumn(name = "error_catalog_id")
     private ErrorCatalog errorCatalog;
 }

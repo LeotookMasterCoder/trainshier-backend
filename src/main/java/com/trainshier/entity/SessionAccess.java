@@ -6,26 +6,26 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "accesos_sesion")
+@Table(name = "session_access")
 @Data
 public class SessionAccess {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_acceso")
+    @Column(name = "id")
     private Long id;
 
-    @Column(name = "ingreso_en")
+    @Column(name = "login_at")
     private LocalDateTime loginAt;
 
-    @Column(name = "salida_en")
+    @Column(name = "logout_at")
     private LocalDateTime logoutAt;
 
     @ManyToOne
-    @JoinColumn(name = "sesion_id", nullable = false)
+    @JoinColumn(name = "session_id", nullable = false)
     private SimulationSession session;
 
     @ManyToOne
-    @JoinColumn(name = "aprendiz_id", nullable = false)
+    @JoinColumn(name = "apprentice_id", nullable = false)
     private User apprentice;
 }

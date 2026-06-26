@@ -4,12 +4,9 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import com.trainshier.enums.TransactionStatus;
-import com.trainshier.converter.TransactionStatusConverter;
-
 
 @Entity
-@Table(name = "transacciones")
+@Table(name = "transactions")
 @Data
 public class Transaction {
 
@@ -18,23 +15,22 @@ public class Transaction {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "estado", nullable = false)
-    @Convert(converter = TransactionStatusConverter.class)
-    private TransactionStatus status;
+    @Column(name = "status", nullable = false)
+    private String status;
 
     @Column(name = "total")
     private Double total;
 
-    @Column(name = "errores")
+    @Column(name = "errors")
     private Integer errors;
 
-    @Column(name = "efectividad", nullable = false)
+    @Column(name = "effectiveness", nullable = false)
     private Double effectiveness;
 
-    @Column(name = "fecha")
+    @Column(name = "date")
     private LocalDateTime date;
 
     @ManyToOne
-    @JoinColumn(name = "acceso_id", nullable = true)
+    @JoinColumn(name = "access_id")
     private SessionAccess access;
 }

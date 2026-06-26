@@ -4,21 +4,21 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "practicas")
+@Table(name = "practices")
 @Data
 public class Practice {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_practica")
+    @Column(name = "id")
     private Long id;
 
-    @Column(name = "nombre", nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "descripcion")
+    @Column(name = "description")
     private String description;
 
-    @Column(name = "duracion_estimada")
+    @Column(name = "estimated_duration")
     private Integer estimatedDuration;
 }

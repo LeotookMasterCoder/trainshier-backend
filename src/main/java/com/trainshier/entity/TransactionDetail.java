@@ -4,33 +4,33 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "detalle_transaccion")
+@Table(name = "transaction_details")
 @Data
 public class TransactionDetail {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_detalle")
+    @Column(name = "id")
     private Long id;
 
-    @Column(name = "cantidad", nullable = false)
+    @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "precio_unitario", nullable = false)
+    @Column(name = "unit_price", nullable = false)
     private Double unitPrice;
 
-    @Column(name = "descuento_aplicado")
+    @Column(name = "discount_applied")
     private Double discountApplied;
 
     @ManyToOne
-    @JoinColumn(name = "transaccion_id", nullable = false)
+    @JoinColumn(name = "transaction_id", nullable = false)
     private Transaction transaction;
 
     @ManyToOne
-    @JoinColumn(name = "producto_id", nullable = false)
+    @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
     @ManyToOne
-    @JoinColumn(name = "promocion_id")
+    @JoinColumn(name = "promotion_id")
     private Promotion promotion;
 }

@@ -15,6 +15,14 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Database initializer.
+ *
+ * Guarantees that essential system accounts always exist (admin + demo instructors).
+ * Does NOT seed training/simulation data — all of that must come from real usage.
+ * Also migrates any plain-text passwords to BCrypt.
+ * Installs the cascading delete trigger for the English schema.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -26,145 +34,142 @@ public class DatabaseInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        log.info("Starting database initialization and password migration check...");
+        log.info("Starting database initialization...");
 
-        // 1. Ensure rfid_uid column exists (idempotent)
-        try {
-            jdbcTemplate.execute("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rfid_uid text;");
-        } catch (Exception e) {
-            log.warn("rfid_uid column may already exist: {}", e.getMessage());
-        }
+        // 1. Install cascading delete trigger for the English schema
+        installCascadeTrigger();
 
-        // 1.5. Ensure cascading delete function and trigger exist
-        try {
-            log.info("Creating BEFORE DELETE trigger and helper function for table 'usuarios'...");
-            jdbcTemplate.execute(
-                "CREATE OR REPLACE FUNCTION trg_clean_user_data() " +
-                "RETURNS TRIGGER AS $$ " +
-                "BEGIN " +
-                "    DELETE FROM pagos_transaccion WHERE transaccion_id IN ( " +
-                "        SELECT t.id FROM transacciones t  " +
-                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
-                "        WHERE a.aprendiz_id = OLD.id_usuario ); " +
-                "    DELETE FROM detalle_transaccion WHERE transaccion_id IN ( " +
-                "        SELECT t.id FROM transacciones t  " +
-                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
-                "        WHERE a.aprendiz_id = OLD.id_usuario ); " +
-                "    DELETE FROM errores_simulacion WHERE transaccion_id IN ( " +
-                "        SELECT t.id FROM transacciones t  " +
-                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
-                "        WHERE a.aprendiz_id = OLD.id_usuario ); " +
-                "    DELETE FROM comentarios_instructor WHERE transaccion_id IN ( " +
-                "        SELECT t.id FROM transacciones t  " +
-                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
-                "        WHERE a.aprendiz_id = OLD.id_usuario ); " +
-                "    DELETE FROM inventario_simulado WHERE acceso_id IN ( " +
-                "        SELECT id_acceso FROM accesos_sesion WHERE aprendiz_id = OLD.id_usuario ); " +
-                "    DELETE FROM transacciones WHERE acceso_id IN ( " +
-                "        SELECT id_acceso FROM accesos_sesion WHERE aprendiz_id = OLD.id_usuario ); " +
-                "    DELETE FROM accesos_sesion WHERE aprendiz_id = OLD.id_usuario; " +
-                "    DELETE FROM reports WHERE user_id = OLD.id_usuario; " +
-                "    DELETE FROM comentarios_instructor WHERE instructor_id = OLD.id_usuario; " +
-                "    DELETE FROM pagos_transaccion WHERE transaccion_id IN ( " +
-                "        SELECT t.id FROM transacciones t  " +
-                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
-                "        JOIN sesiones_simulacion s ON a.sesion_id = s.id_sesion " +
-                "        WHERE s.instructor_id = OLD.id_usuario ); " +
-                "    DELETE FROM detalle_transaccion WHERE transaccion_id IN ( " +
-                "        SELECT t.id FROM transacciones t  " +
-                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
-                "        JOIN sesiones_simulacion s ON a.sesion_id = s.id_sesion " +
-                "        WHERE s.instructor_id = OLD.id_usuario ); " +
-                "    DELETE FROM errores_simulacion WHERE transaccion_id IN ( " +
-                "        SELECT t.id FROM transacciones t  " +
-                "        JOIN accesos_sesion a ON t.acceso_id = a.id_acceso " +
-                "        JOIN sesiones_simulacion s ON a.sesion_id = s.id_sesion " +
-                "        WHERE s.instructor_id = OLD.id_usuario ); " +
-                "    DELETE FROM inventario_simulado WHERE acceso_id IN ( " +
-                "        SELECT a.id_acceso FROM accesos_sesion a " +
-                "        JOIN sesiones_simulacion s ON a.sesion_id = s.id_sesion " +
-                "        WHERE s.instructor_id = OLD.id_usuario ); " +
-                "    DELETE FROM transacciones WHERE acceso_id IN ( " +
-                "        SELECT a.id_acceso FROM accesos_sesion a " +
-                "        JOIN sesiones_simulacion s ON a.sesion_id = s.id_sesion " +
-                "        WHERE s.instructor_id = OLD.id_usuario ); " +
-                "    DELETE FROM accesos_sesion WHERE sesion_id IN ( " +
-                "        SELECT id_sesion FROM sesiones_simulacion WHERE instructor_id = OLD.id_usuario ); " +
-                "    DELETE FROM configuracion_ia_simulacion WHERE sesion_id IN ( " +
-                "        SELECT id_sesion FROM sesiones_simulacion WHERE instructor_id = OLD.id_usuario ); " +
-                "    DELETE FROM sesiones_simulacion WHERE instructor_id = OLD.id_usuario; " +
-                "    RETURN OLD; " +
-                "END; $$ LANGUAGE plpgsql;"
-            );
-            jdbcTemplate.execute(
-                "CREATE OR REPLACE TRIGGER trg_before_delete_usuarios " +
-                "BEFORE DELETE ON usuarios " +
-                "FOR EACH ROW " +
-                "EXECUTE FUNCTION trg_clean_user_data();"
-            );
-            log.info("Trigger and function created/updated successfully!");
-        } catch (Exception e) {
-            log.error("Could not create before delete trigger on 'usuarios': {}", e.getMessage());
-        }
+        // 2. Guarantee essential accounts (admin + demo instructors) always exist
+        ensureUser("admin@trainshier.com",        "Administrador Sistema",  "Admin123*",      UserRole.ADMINISTRATOR);
+        ensureUser("instructor@trainshier.com",   "Carlos Ramírez",         "Instructor123*", UserRole.INSTRUCTOR);
+        ensureUser("instructor2@trainshier.com",  "Laura Gómez",            "Instructor123*", UserRole.INSTRUCTOR);
+        ensureUser("instructor3@trainshier.com",  "Andrés Molina",          "Instructor123*", UserRole.INSTRUCTOR);
 
-        // 2. Seed demo accounts
-        // Demo apprentice
-        ensureDemoUser("aprendiz@trainshier.com", "Aprendiz Caja POS", "Aprendiz123*",
-                UserRole.APPRENTICE, "1029384756");
-
-        // Three real instructor accounts with different names and emails
-        ensureDemoUser("instructor@trainshier.com",  "Carlos Ramírez Pérez",  "Instructor123*",
-                UserRole.INSTRUCTOR, "5678901234");
-        ensureDemoUser("instructor2@trainshier.com", "Laura Gómez Martínez",  "Instructor123*",
-                UserRole.INSTRUCTOR, "5678901235");
-        ensureDemoUser("instructor3@trainshier.com", "Andrés Molina Herrera", "Instructor123*",
-                UserRole.INSTRUCTOR, "5678901236");
-
-        // Admin
-        ensureDemoUser("admin@trainshier.com", "Administrador Sistema", "Admin123*",
-                UserRole.ADMINISTRATOR, "9876543210");
-
-        // 3. Migrate any remaining plain-text passwords to BCrypt
+        // 3. Migrate any plain-text passwords to BCrypt and ensure active=true
         List<User> users = userRepository.findAll();
         for (User user : users) {
-            String pwd = user.getPassword();
-            if (pwd != null && !pwd.startsWith("$2a$") && !pwd.startsWith("$2b$") && !pwd.startsWith("$2y$")) {
-                log.info("Migrating plain-text password to BCrypt for user: {}", user.getEmail());
-                user.setPassword(passwordEncoder.encode(pwd));
-                userRepository.save(user);
-            }
-        }
-        log.info("Database initialization and migration completed.");
-    }
-
-    private void ensureDemoUser(String email, String name, String password, UserRole role, String rfidUid) {
-        Optional<User> existing = userRepository.findByEmail(email);
-        if (existing.isEmpty()) {
-            log.info("Creating missing demo user: {}", email);
-            User user = new User();
-            user.setEmail(email);
-            user.setName(name);
-            user.setPassword(passwordEncoder.encode(password));
-            user.setRole(role);
-            user.setRfidUid(rfidUid);
-            userRepository.save(user);
-        } else {
-            User user = existing.get();
             boolean changed = false;
             String pwd = user.getPassword();
-            if (pwd != null && !pwd.startsWith("$2")) {
-                log.info("Demo user {} exists but has plain-text password. Encrypting...", email);
-                user.setPassword(passwordEncoder.encode(password));
+            if (pwd != null && !pwd.startsWith("$2a$") && !pwd.startsWith("$2b$") && !pwd.startsWith("$2y$")) {
+                log.info("Migrating plain-text password for: {}", user.getEmail());
+                user.setPassword(passwordEncoder.encode(pwd));
                 changed = true;
             }
-            if (user.getRfidUid() == null) {
-                log.info("Demo user {} lacks RFID UID. Associating: {}", email, rfidUid);
-                user.setRfidUid(rfidUid);
+            if (user.getActive() == null) {
+                user.setActive(true);
                 changed = true;
             }
             if (changed) {
                 userRepository.save(user);
             }
+        }
+
+        log.info("Database initialization completed.");
+    }
+
+    /** Ensure a user exists; if it doesn't, create it. Never overwrites existing data. */
+    private void ensureUser(String email, String name, String password, UserRole role) {
+        Optional<User> existing = userRepository.findByEmail(email);
+        if (existing.isEmpty()) {
+            log.info("Creating essential account: {}", email);
+            User user = new User();
+            user.setEmail(email);
+            user.setName(name);
+            user.setPassword(passwordEncoder.encode(password));
+            user.setRole(role);
+            user.setActive(true);
+            userRepository.save(user);
+        } else {
+            // Ensure active field is set for legacy rows
+            User user = existing.get();
+            if (user.getActive() == null) {
+                user.setActive(true);
+                userRepository.save(user);
+            }
+        }
+    }
+
+    private void installCascadeTrigger() {
+        try {
+            log.info("Installing BEFORE DELETE trigger on 'users' table...");
+            jdbcTemplate.execute(
+                "CREATE OR REPLACE FUNCTION trg_clean_user_data() " +
+                "RETURNS TRIGGER AS $$ " +
+                "BEGIN " +
+                "    DELETE FROM simulation_errors WHERE transaction_id IN (" +
+                "        SELECT t.id FROM transactions t " +
+                "        JOIN session_access a ON t.access_id = a.id " +
+                "        WHERE a.apprentice_id = OLD.id); " +
+                "    DELETE FROM transaction_details WHERE transaction_id IN (" +
+                "        SELECT t.id FROM transactions t " +
+                "        JOIN session_access a ON t.access_id = a.id " +
+                "        WHERE a.apprentice_id = OLD.id); " +
+                "    DELETE FROM transaction_payments WHERE transaction_id IN (" +
+                "        SELECT t.id FROM transactions t " +
+                "        JOIN session_access a ON t.access_id = a.id " +
+                "        WHERE a.apprentice_id = OLD.id); " +
+                "    DELETE FROM invoices WHERE transaction_id IN (" +
+                "        SELECT t.id FROM transactions t " +
+                "        JOIN session_access a ON t.access_id = a.id " +
+                "        WHERE a.apprentice_id = OLD.id); " +
+                "    DELETE FROM inventory_simulation WHERE access_id IN (" +
+                "        SELECT id FROM session_access WHERE apprentice_id = OLD.id); " +
+                "    DELETE FROM transactions WHERE access_id IN (" +
+                "        SELECT id FROM session_access WHERE apprentice_id = OLD.id); " +
+                "    DELETE FROM instructor_comments WHERE apprentice_id = OLD.id; " +
+                "    DELETE FROM reports WHERE user_id = OLD.id; " +
+                "    DELETE FROM rfid_requests WHERE user_id = OLD.id; " +
+                "    DELETE FROM session_access WHERE apprentice_id = OLD.id; " +
+                "    DELETE FROM simulation_errors WHERE transaction_id IN (" +
+                "        SELECT t.id FROM transactions t " +
+                "        JOIN session_access a ON t.access_id = a.id " +
+                "        JOIN simulation_sessions s ON a.session_id = s.id " +
+                "        WHERE s.instructor_id = OLD.id); " +
+                "    DELETE FROM transaction_details WHERE transaction_id IN (" +
+                "        SELECT t.id FROM transactions t " +
+                "        JOIN session_access a ON t.access_id = a.id " +
+                "        JOIN simulation_sessions s ON a.session_id = s.id " +
+                "        WHERE s.instructor_id = OLD.id); " +
+                "    DELETE FROM transaction_payments WHERE transaction_id IN (" +
+                "        SELECT t.id FROM transactions t " +
+                "        JOIN session_access a ON t.access_id = a.id " +
+                "        JOIN simulation_sessions s ON a.session_id = s.id " +
+                "        WHERE s.instructor_id = OLD.id); " +
+                "    DELETE FROM invoices WHERE transaction_id IN (" +
+                "        SELECT t.id FROM transactions t " +
+                "        JOIN session_access a ON t.access_id = a.id " +
+                "        JOIN simulation_sessions s ON a.session_id = s.id " +
+                "        WHERE s.instructor_id = OLD.id); " +
+                "    DELETE FROM inventory_simulation WHERE access_id IN (" +
+                "        SELECT a.id FROM session_access a " +
+                "        JOIN simulation_sessions s ON a.session_id = s.id " +
+                "        WHERE s.instructor_id = OLD.id); " +
+                "    DELETE FROM transactions WHERE access_id IN (" +
+                "        SELECT a.id FROM session_access a " +
+                "        JOIN simulation_sessions s ON a.session_id = s.id " +
+                "        WHERE s.instructor_id = OLD.id); " +
+                "    DELETE FROM session_access WHERE session_id IN (" +
+                "        SELECT id FROM simulation_sessions WHERE instructor_id = OLD.id); " +
+                "    DELETE FROM simulation_configuration WHERE session_id IN (" +
+                "        SELECT id FROM simulation_sessions WHERE instructor_id = OLD.id); " +
+                "    DELETE FROM instructor_comments WHERE instructor_id = OLD.id; " +
+                "    DELETE FROM rfid_requests WHERE reviewed_by = OLD.id; " +
+                "    DELETE FROM simulation_sessions WHERE instructor_id = OLD.id; " +
+                "    RETURN OLD; " +
+                "END; $$ LANGUAGE plpgsql;"
+            );
+            jdbcTemplate.execute(
+                "DROP TRIGGER IF EXISTS trg_before_delete_users ON users"
+            );
+            jdbcTemplate.execute(
+                "CREATE TRIGGER trg_before_delete_users " +
+                "BEFORE DELETE ON users " +
+                "FOR EACH ROW " +
+                "EXECUTE FUNCTION trg_clean_user_data()"
+            );
+            log.info("Cascade delete trigger installed successfully.");
+        } catch (Exception e) {
+            log.warn("Could not install cascade trigger: {}", e.getMessage());
         }
     }
 }

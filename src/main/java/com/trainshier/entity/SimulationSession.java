@@ -6,25 +6,25 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "sesiones_simulacion")
+@Table(name = "simulation_sessions")
 @Data
 public class SimulationSession {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_sesion")
+    @Column(name = "id")
     private Long id;
 
-    @Column(name = "codigo_acceso", unique = true, nullable = false)
+    @Column(name = "access_code", unique = true, nullable = false)
     private String accessCode;
 
-    @Column(name = "activa")
+    @Column(name = "active")
     private Boolean active;
 
-    @Column(name = "creada_en")
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "expira_en")
+    @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
     @ManyToOne
@@ -32,6 +32,6 @@ public class SimulationSession {
     private User instructor;
 
     @ManyToOne
-    @JoinColumn(name = "practica_id")
+    @JoinColumn(name = "practice_id")
     private Practice practice;
 }

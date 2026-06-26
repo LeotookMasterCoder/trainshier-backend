@@ -4,19 +4,9 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import com.trainshier.converter.InventoryMovementTypeConverter;
-import com.trainshier.enums.InventoryMovementType;
 
-/**
- * @param id movement identifier
- * @param product affected product
- * @param movementType movement type
- * @param quantity movement quantity
- * @param date movement date
- * @param reason movement reason
- */
 @Entity
-@Table(name = "movimientos_inventario")
+@Table(name = "inventory_movements")
 @Data
 public class InventoryMovement {
 
@@ -25,20 +15,19 @@ public class InventoryMovement {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "tipo", nullable = false)
-    @Convert(converter = InventoryMovementTypeConverter.class)
-    private InventoryMovementType movementType;
+    @Column(name = "movement_type", nullable = false)
+    private String movementType;
 
-    @Column(name = "cantidad", nullable = false)
+    @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "fecha")
+    @Column(name = "date")
     private LocalDateTime date;
 
-    @Column(name = "motivo")
+    @Column(name = "reason")
     private String reason;
 
     @ManyToOne
-    @JoinColumn(name = "producto_id")
+    @JoinColumn(name = "product_id")
     private Product product;
 }

@@ -3,24 +3,8 @@ package com.trainshier.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
-/**
- * @param id configuration identifier
- * @param session associated session
- * @param parameter configuration parameter
- * @param value parameter value
- */
 @Entity
-@Table(
-        name = "configuracion_ia_simulacion",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        columnNames = {
-                                "sesion_id",
-                                "parametro"
-                        }
-                )
-        }
-)
+@Table(name = "simulation_configuration")
 @Data
 public class SimulationConfiguration {
 
@@ -29,13 +13,13 @@ public class SimulationConfiguration {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "parametro", nullable = false)
+    @Column(name = "parameter", nullable = false)
     private String parameter;
 
-    @Column(name = "valor", nullable = false)
+    @Column(name = "value", nullable = false)
     private String value;
 
     @ManyToOne
-    @JoinColumn(name = "sesion_id", nullable = false)
+    @JoinColumn(name = "session_id", nullable = false)
     private SimulationSession session;
 }

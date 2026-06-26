@@ -2,11 +2,9 @@ package com.trainshier.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import com.trainshier.enums.PromotionType;
-import com.trainshier.converter.PromotionTypeConverter;
 
 @Entity
-@Table(name = "promociones")
+@Table(name = "promotions")
 @Data
 public class Promotion {
 
@@ -15,19 +13,18 @@ public class Promotion {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "nombre", nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "tipo", nullable = false)
-    @Convert(converter = PromotionTypeConverter.class)
-    private PromotionType type;
+    @Column(name = "type", nullable = false)
+    private String type;
 
-    @Column(name = "descuento", nullable = false)
+    @Column(name = "discount", nullable = false)
     private Double discount;
 
-    @Column(name = "monto_minimo")
+    @Column(name = "minimum_amount")
     private Double minimumAmount;
 
-    @Column(name = "activa")
+    @Column(name = "active")
     private Boolean active;
 }

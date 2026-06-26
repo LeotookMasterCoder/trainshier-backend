@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "comentarios_instructor")
+@Table(name = "instructor_comments")
 @Data
 public class InstructorComment {
 
@@ -15,20 +15,24 @@ public class InstructorComment {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "comentario", nullable = false)
+    @Column(name = "comment")
     private String comment;
 
-    @Column(name = "calificacion")
+    @Column(name = "score")
     private Double score;
 
-    @Column(name = "fecha")
+    @Column(name = "date")
     private LocalDateTime date;
 
     @ManyToOne
-    @JoinColumn(name = "transaccion_id")
+    @JoinColumn(name = "transaction_id")
     private Transaction transaction;
 
     @ManyToOne
     @JoinColumn(name = "instructor_id")
     private User instructor;
+
+    @ManyToOne
+    @JoinColumn(name = "apprentice_id")
+    private User apprentice;
 }

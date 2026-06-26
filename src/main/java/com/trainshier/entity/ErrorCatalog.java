@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "catalogo_errores")
+@Table(name = "error_catalog")
 @Data
 public class ErrorCatalog {
 
@@ -13,15 +13,15 @@ public class ErrorCatalog {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "codigo", unique = true, nullable = false)
+    @Column(name = "code", unique = true, nullable = false)
     private String code;
 
-    @Column(name = "descripcion", nullable = false)
+    @Column(name = "description", nullable = false)
     private String description;
 
-    @Column(name = "solucion_sugerida")
+    @Column(name = "suggested_solution")
     private String suggestedSolution;
 
-    @Column(name = "categoria")
+    @Column(name = "category")
     private String category;
 }

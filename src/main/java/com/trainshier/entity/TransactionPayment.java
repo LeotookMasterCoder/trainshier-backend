@@ -2,30 +2,27 @@ package com.trainshier.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import com.trainshier.converter.PaymentTypeConverter;
-import com.trainshier.enums.PaymentType;
 
 @Entity
-@Table(name = "pagos_transaccion")
+@Table(name = "transaction_payments")
 @Data
 public class TransactionPayment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_pago")
+    @Column(name = "id")
     private Long id;
 
-    @Column(name = "tipo_pago", nullable = false)
-    @Convert(converter = PaymentTypeConverter.class)
-    private PaymentType paymentType;
+    @Column(name = "payment_type", nullable = false)
+    private String paymentType;
 
-    @Column(name = "monto", nullable = false)
+    @Column(name = "amount", nullable = false)
     private Double amount;
 
-    @Column(name = "cambio_entregado")
+    @Column(name = "delivered_change")
     private Double deliveredChange;
 
     @ManyToOne
-    @JoinColumn(name = "transaccion_id", nullable = false)
+    @JoinColumn(name = "transaction_id", nullable = false)
     private Transaction transaction;
 }

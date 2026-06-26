@@ -32,4 +32,9 @@ public class UpdateUserRequestDTO {
      * User RFID UID.
      */
     private String rfidUid;
+
+    /**
+     * Whether the user account is active.
+     */
+    private Boolean active;
 }

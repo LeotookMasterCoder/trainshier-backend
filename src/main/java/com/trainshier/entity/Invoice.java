@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "facturas")
+@Table(name = "invoices")
 @Data
 public class Invoice {
 
@@ -15,16 +15,16 @@ public class Invoice {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "numero_factura", unique = true, nullable = false)
+    @Column(name = "invoice_number", unique = true, nullable = false)
     private String invoiceNumber;
 
-    @Column(name = "url_comprobante")
+    @Column(name = "receipt_url")
     private String receiptUrl;
 
-    @Column(name = "generada_en")
+    @Column(name = "generated_at")
     private LocalDateTime generatedAt;
 
     @OneToOne
-    @JoinColumn(name = "transaccion_id", unique = true, nullable = false)
+    @JoinColumn(name = "transaction_id", unique = true, nullable = false)
     private Transaction transaction;
 }

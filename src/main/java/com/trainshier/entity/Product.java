@@ -4,31 +4,31 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "productos")
+@Table(name = "products")
 @Data
 public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_producto")
+    @Column(name = "id")
     private Long id;
 
-    @Column(name = "nombre", nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "precio", nullable = false)
+    @Column(name = "price", nullable = false)
     private Double price;
 
     @Column(name = "stock", nullable = false)
     private Integer stock;
 
-    @Column(name = "codigo_barras", unique = true)
+    @Column(name = "barcode", unique = true)
     private String barcode;
 
-    @Column(name = "activo")
+    @Column(name = "active")
     private Boolean active;
 
     @ManyToOne
-    @JoinColumn(name = "categoria_id")
+    @JoinColumn(name = "category_id")
     private Category category;
 }
