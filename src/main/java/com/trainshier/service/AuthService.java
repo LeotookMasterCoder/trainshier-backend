@@ -208,7 +208,7 @@ public class AuthService {
     public List<UserResponseDTO> getPublicInstructors() {
         return userRepository.findAll().stream()
                 .filter(u -> u.getRole() == UserRole.INSTRUCTOR)
-                .map(u -> new UserResponseDTO(u.getId(), u.getName(), u.getEmail(), u.getRole(), u.getRfidUid()))
+                .map(u -> new UserResponseDTO(u.getId(), u.getName(), u.getEmail(), u.getRole(), u.getRfidUid(), u.getActive()))
                 .collect(Collectors.toList());
     }
 }

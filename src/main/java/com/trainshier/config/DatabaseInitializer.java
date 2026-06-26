@@ -41,7 +41,7 @@ public class DatabaseInitializer implements CommandLineRunner {
 
         // 2. Guarantee essential accounts (admin + demo instructors) always exist
         ensureUser("admin@trainshier.com",        "Administrador Sistema",  "Admin123*",      UserRole.ADMINISTRATOR);
-        ensureUser("instructor@trainshier.com",   "Carlos Ramírez",         "Instructor123*", UserRole.INSTRUCTOR);
+        ensureUser("instructor@trainshier.com",   "Instructor Principal",   "Instructor123*", UserRole.INSTRUCTOR);
         ensureUser("instructor2@trainshier.com",  "Laura Gómez",            "Instructor123*", UserRole.INSTRUCTOR);
         ensureUser("instructor3@trainshier.com",  "Andrés Molina",          "Instructor123*", UserRole.INSTRUCTOR);
 

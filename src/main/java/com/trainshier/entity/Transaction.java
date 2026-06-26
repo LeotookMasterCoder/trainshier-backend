@@ -33,4 +33,7 @@ public class Transaction {
     @ManyToOne
     @JoinColumn(name = "access_id")
     private SessionAccess access;
+
+    @OneToMany(mappedBy = "transaction", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<TransactionDetail> details = new java.util.ArrayList<>();
 }
