@@ -10,10 +10,14 @@ import com.trainshier.dto.RefreshTokenResponseDTO;
 import com.trainshier.dto.RegisterRequestDTO;
 import com.trainshier.dto.RecoverPasswordRequestDTO;
 import com.trainshier.dto.RfidLoginRequestDTO;
+import com.trainshier.dto.UserResponseDTO;
 import com.trainshier.service.AuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 
 /**
  * Authentication controller.
@@ -118,4 +122,15 @@ public class AuthController {
 
         return ResponseEntity.ok(response);
     }
-}
+
+    /**
+     * Returns the list of instructors for the public registration flow.
+     * No authentication required - used by the apprentice registration form.
+     *
+     * @return list of instructor users
+     */
+    @GetMapping("/instructors")
+    public ResponseEntity<List<UserResponseDTO>> getPublicInstructors() {
+        return ResponseEntity.ok(authService.getPublicInstructors());
+    }
+}

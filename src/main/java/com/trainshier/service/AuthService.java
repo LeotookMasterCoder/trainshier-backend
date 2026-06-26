@@ -1,6 +1,8 @@
 package com.trainshier.service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,6 +14,7 @@ import com.trainshier.dto.RefreshTokenResponseDTO;
 import com.trainshier.dto.RegisterRequestDTO;
 import com.trainshier.dto.RecoverPasswordRequestDTO;
 import com.trainshier.dto.RfidLoginRequestDTO;
+import com.trainshier.dto.UserResponseDTO;
 import com.trainshier.entity.User;
 import com.trainshier.enums.UserRole;
 import com.trainshier.repository.UserRepository;
@@ -194,5 +197,18 @@ public class AuthService {
         response.setToken(newToken);
 
         return response;
+    }
+
+    /**
+     * Returns the list of instructors available for the public registration form.
+     * This method is intentionally public (no auth required).
+     *
+     * @return list of instructor user DTOs
+     */
+    public List<UserResponseDTO> getPublicInstructors() {
+        return userRepository.findAll().stream()
+                .filter(u -> u.getRole() == UserRole.INSTRUCTOR)
+                .map(u -> new UserResponseDTO(u.getId(), u.getName(), u.getEmail(), u.getRole(), u.getRfidUid()))
+                .collect(Collectors.toList());
     }
 }
