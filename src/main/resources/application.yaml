@@ -24,3 +24,9 @@ logging:
 
 gemini:
   api-key: ${GEMINI_API_KEY:}
+
+mailgun:
+  base-url: ${MAILGUN_BASE_URL:https://api.mailgun.net/v3}
+  api-key: ${MAILGUN_API_KEY:}
+  domain: ${MAILGUN_DOMAIN:}
+  from: ${MAILGUN_FROM:TrainShier <postmaster@sandbox.mailgun.org>}

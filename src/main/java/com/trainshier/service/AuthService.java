@@ -35,6 +35,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final EmailService emailService;
 
     /**
      * Register a new user.
@@ -164,16 +165,8 @@ public class AuthService {
         user.setPassword(encryptedPassword);
         userRepository.save(user);
 
-        // Simulate sending password recovery email
-        System.out.println("==================================================");
-        System.out.println("📨 CORREO ELECTRÓNICO ENVIADO (SIMULADO)");
-        System.out.println("Destinatario: " + user.getEmail());
-        System.out.println("Asunto: Restablecimiento de contraseña TrainShier");
-        System.out.println("Mensaje: Estimado/a " + user.getName() + ",");
-        System.out.println("Tu contraseña ha sido actualizada con éxito.");
-        System.out.println("Detalles Técnicos de Seguridad:");
-        System.out.println(" - Contraseña cifrada en DB: " + encryptedPassword);
-        System.out.println("==================================================");
+        // Send functional password recovery email
+        emailService.sendPasswordRecoveryEmail(user.getEmail(), user.getName(), request.getNewPassword());
 
         MessageResponseDTO response = new MessageResponseDTO();
         response.setMessage("Contraseña restablecida y guardada correctamente. Se envió confirmación al correo.");
