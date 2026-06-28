@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
  * Product controller.
  */
 @RestController
-@RequestMapping("/api/products")
+@RequestMapping("/products")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class ProductController {

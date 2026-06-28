@@ -11,7 +11,7 @@ import com.trainshier.repository.InstructorCommentRepository;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/comments")
+@RequestMapping("/comments")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class InstructorCommentController {

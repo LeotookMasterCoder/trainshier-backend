@@ -10,7 +10,7 @@ import com.trainshier.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/transactions")
+@RequestMapping("/transactions")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class TransactionController {

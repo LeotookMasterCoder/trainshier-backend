@@ -10,7 +10,7 @@ import com.trainshier.service.SimulationService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/simulations")
+@RequestMapping("/simulations")
 @RequiredArgsConstructor
 public class SimulationController {
 

@@ -10,7 +10,7 @@ import com.trainshier.service.ReportService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/reports")
+@RequestMapping("/reports")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class ReportController {

@@ -10,7 +10,7 @@ import com.trainshier.service.SessionService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/sessions")
+@RequestMapping("/sessions")
 @RequiredArgsConstructor
 public class SessionController {
 

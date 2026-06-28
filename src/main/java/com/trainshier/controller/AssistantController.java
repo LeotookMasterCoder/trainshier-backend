@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 @RestController
-@RequestMapping("/api/assistant")
+@RequestMapping("/assistant")
 @RequiredArgsConstructor
 public class AssistantController {
 

@@ -10,7 +10,7 @@ import com.trainshier.entity.InventorySimulation;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/inventory")
+@RequestMapping("/inventory")
 @RequiredArgsConstructor
 public class InventoryController {
 

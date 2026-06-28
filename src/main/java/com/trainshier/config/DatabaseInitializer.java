@@ -39,11 +39,12 @@ public class DatabaseInitializer implements CommandLineRunner {
         // 1. Install cascading delete trigger for the English schema
         installCascadeTrigger();
 
-        // 2. Guarantee essential accounts (admin + demo instructors) always exist
-        ensureUser("admin@trainshier.com",        "Administrador Sistema",  "Admin123*",      UserRole.ADMINISTRATOR);
-        ensureUser("instructor@trainshier.com",   "Instructor Principal",   "Instructor123*", UserRole.INSTRUCTOR);
-        ensureUser("instructor2@trainshier.com",  "Laura Gómez",            "Instructor123*", UserRole.INSTRUCTOR);
-        ensureUser("instructor3@trainshier.com",  "Andrés Molina",          "Instructor123*", UserRole.INSTRUCTOR);
+        // 2. Guarantee essential accounts (admin + demo instructors + demo apprentice) always exist
+        ensureUser("admin@trainshier.com",        "Administrador Sistema",  "Admin123*",      UserRole.ADMINISTRATOR, "RFID-ADMIN-999");
+        ensureUser("instructor@trainshier.com",   "Instructor Principal",   "Instructor123*", UserRole.INSTRUCTOR,    "RFID-INSTRUCTOR-888");
+        ensureUser("instructor2@trainshier.com",  "Laura Gómez",            "Instructor123*", UserRole.INSTRUCTOR,    "RFID-INSTRUCTOR-889");
+        ensureUser("instructor3@trainshier.com",  "Andrés Molina",          "Instructor123*", UserRole.INSTRUCTOR,    "RFID-INSTRUCTOR-890");
+        ensureUser("aprendiz@trainshier.com",    "Aprendiz Demo",          "Aprendiz123*",   UserRole.APPRENTICE,    "RFID-APPRENTICE-777");
 
         // 3. Migrate any plain-text passwords to BCrypt and ensure active=true
         List<User> users = userRepository.findAll();
@@ -68,7 +69,7 @@ public class DatabaseInitializer implements CommandLineRunner {
     }
 
     /** Ensure a user exists; if it doesn't, create it. Never overwrites existing data. */
-    private void ensureUser(String email, String name, String password, UserRole role) {
+    private void ensureUser(String email, String name, String password, UserRole role, String rfidUid) {
         Optional<User> existing = userRepository.findByEmail(email);
         if (existing.isEmpty()) {
             log.info("Creating essential account: {}", email);
@@ -78,12 +79,21 @@ public class DatabaseInitializer implements CommandLineRunner {
             user.setPassword(passwordEncoder.encode(password));
             user.setRole(role);
             user.setActive(true);
+            user.setRfidUid(rfidUid);
             userRepository.save(user);
         } else {
             // Ensure active field is set for legacy rows
             User user = existing.get();
+            boolean changed = false;
             if (user.getActive() == null) {
                 user.setActive(true);
+                changed = true;
+            }
+            if (user.getRfidUid() == null && rfidUid != null) {
+                user.setRfidUid(rfidUid);
+                changed = true;
+            }
+            if (changed) {
                 userRepository.save(user);
             }
         }

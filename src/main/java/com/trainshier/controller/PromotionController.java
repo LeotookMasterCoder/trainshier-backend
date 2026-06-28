@@ -10,7 +10,7 @@ import com.trainshier.service.PromotionService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/promotions")
+@RequestMapping("/promotions")
 @RequiredArgsConstructor
 public class PromotionController {
 
