@@ -23,6 +23,7 @@ import com.trainshier.enums.UserRole;
 import com.trainshier.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Authentication service.
@@ -33,6 +34,7 @@ import lombok.RequiredArgsConstructor;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     private final PasswordEncoder passwordEncoder;
@@ -210,7 +212,8 @@ public class AuthService {
         if (sent) {
             response.setMessage("Código de verificación enviado al correo.");
         } else {
-            response.setMessage("Código de verificación generado: " + code + " (simulado en pantalla, credenciales Mailgun no configuradas).");
+            log.info("CÓDIGO DE VERIFICACIÓN GENERADO (Mailgun no configurado): {} para {}", code, email);
+            response.setMessage("Código de verificación enviado (simulado en consola del servidor).");
         }
         return response;
     }
