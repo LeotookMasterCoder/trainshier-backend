@@ -82,6 +82,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         "role",
                         role);
 
+                // Set authentication in Spring Security context
+                org.springframework.security.authentication.UsernamePasswordAuthenticationToken authentication =
+                        new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                                username,
+                                null,
+                                java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
+                        );
+                org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(authentication);
+
                 filterChain.doFilter(
                         request,
                         response);

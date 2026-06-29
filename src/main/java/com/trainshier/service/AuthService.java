@@ -3,6 +3,9 @@ package com.trainshier.service;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
+import java.util.Random;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,6 +39,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final EmailService emailService;
+    private final Map<String, String> recoveryCodes = new ConcurrentHashMap<>();
 
     /**
      * Register a new user.
@@ -170,6 +174,36 @@ public class AuthService {
 
         MessageResponseDTO response = new MessageResponseDTO();
         response.setMessage("Contraseña restablecida y guardada correctamente. Se envió confirmación al correo.");
+        return response;
+    }
+
+    public MessageResponseDTO requestRecoveryCode(String email) {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isEmpty()) {
+            throw new RuntimeException("Usuario no encontrado");
+        }
+        User user = optionalUser.get();
+
+        // Generate 6-digit code
+        String code = String.format("%06d", new Random().nextInt(1000000));
+        recoveryCodes.put(email, code);
+
+        // Send recovery code email
+        emailService.sendRecoveryCodeEmail(user.getEmail(), user.getName(), code);
+
+        MessageResponseDTO response = new MessageResponseDTO();
+        response.setMessage("Código de verificación enviado.");
+        return response;
+    }
+
+    public MessageResponseDTO verifyRecoveryCode(String email, String code) {
+        String savedCode = recoveryCodes.get(email);
+        if (savedCode == null || !savedCode.equals(code)) {
+            throw new RuntimeException("Código de verificación inválido");
+        }
+
+        MessageResponseDTO response = new MessageResponseDTO();
+        response.setMessage("Código verificado correctamente.");
         return response;
     }
 

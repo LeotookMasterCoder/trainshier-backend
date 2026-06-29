@@ -95,6 +95,20 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/recover-password/request")
+    public ResponseEntity<MessageResponseDTO> requestRecoveryCode(@RequestParam String email) {
+        MessageResponseDTO response = authService.requestRecoveryCode(email);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/recover-password/verify")
+    public ResponseEntity<MessageResponseDTO> verifyRecoveryCode(
+            @RequestParam String email,
+            @RequestParam String code) {
+        MessageResponseDTO response = authService.verifyRecoveryCode(email, code);
+        return ResponseEntity.ok(response);
+    }
+
     /**
      * Refreshes JWT token.
      *
