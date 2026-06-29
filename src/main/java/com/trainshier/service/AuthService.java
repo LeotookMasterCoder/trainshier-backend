@@ -41,7 +41,22 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final EmailService emailService;
+    private final RateLimiterService rateLimiterService;
+    private final jakarta.servlet.http.HttpServletRequest httpServletRequest;
     private final Map<String, String> recoveryCodes = new ConcurrentHashMap<>();
+
+    private String getClientIp() {
+        if (httpServletRequest == null) {
+            return "unknown-ip";
+        }
+        String ipAddress = httpServletRequest.getHeader("X-Forwarded-For");
+        if (ipAddress == null || ipAddress.isEmpty()) {
+            ipAddress = httpServletRequest.getRemoteAddr();
+        } else {
+            ipAddress = ipAddress.split(",")[0].trim();
+        }
+        return ipAddress;
+    }
 
     /**
      * Register a new user.
@@ -50,46 +65,54 @@ public class AuthService {
      * @return response message
      */
     public MessageResponseDTO register(RegisterRequestDTO request) {
+        String ipKey = getClientIp() + ":register";
+        rateLimiterService.checkBlocked(ipKey);
 
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("El correo electrónico ya está registrado.");
-        }
+        try {
+            if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+                throw new RuntimeException("El correo electrónico ya está registrado.");
+            }
 
-        if (request.getUsername() != null && request.getUsername().contains("#")) {
-            String suffix = request.getUsername().substring(request.getUsername().indexOf("#"));
-            java.util.List<User> list = userRepository.findAll();
-            for (User u : list) {
-                if (u.getUsername() != null && u.getUsername().endsWith(suffix)) {
-                    throw new RuntimeException("El numeral con los números ya está en uso.");
+            if (request.getUsername() != null && request.getUsername().contains("#")) {
+                String suffix = request.getUsername().substring(request.getUsername().indexOf("#"));
+                java.util.List<User> list = userRepository.findAll();
+                for (User u : list) {
+                    if (u.getUsername() != null && u.getUsername().endsWith(suffix)) {
+                        throw new RuntimeException("El numeral con los números ya está en uso.");
+                    }
                 }
             }
-        }
 
-        User user = new User();
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        
-        UserRole userRole = UserRole.APPRENTICE;
-        if (request.getRole() != null) {
-            String roleStr = request.getRole().toUpperCase();
-            if (roleStr.contains("APRENDIZ") || roleStr.contains("APPRENTICE")) {
-                userRole = UserRole.APPRENTICE;
-            } else if (roleStr.contains("INSTRUCTOR")) {
-                userRole = UserRole.INSTRUCTOR;
-            } else if (roleStr.contains("ADMINISTRADOR") || roleStr.contains("ADMINISTRATOR") || roleStr.contains("ADMIN")) {
-                userRole = UserRole.ADMINISTRATOR;
+            User user = new User();
+            user.setName(request.getName());
+            user.setEmail(request.getEmail());
+            user.setUsername(request.getUsername());
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            
+            UserRole userRole = UserRole.APPRENTICE;
+            if (request.getRole() != null) {
+                String roleStr = request.getRole().toUpperCase();
+                if (roleStr.contains("APRENDIZ") || roleStr.contains("APPRENTICE")) {
+                    userRole = UserRole.APPRENTICE;
+                } else if (roleStr.contains("INSTRUCTOR")) {
+                    userRole = UserRole.INSTRUCTOR;
+                } else if (roleStr.contains("ADMINISTRADOR") || roleStr.contains("ADMINISTRATOR") || roleStr.contains("ADMIN")) {
+                    userRole = UserRole.ADMINISTRATOR;
+                }
             }
+            user.setRole(userRole);
+
+            userRepository.save(user);
+
+            MessageResponseDTO response = new MessageResponseDTO();
+            response.setMessage("Usuario registrado con éxito");
+
+            rateLimiterService.resetAttempts(ipKey);
+            return response;
+        } catch (RuntimeException e) {
+            rateLimiterService.recordFailedAttempt(ipKey);
+            throw e;
         }
-        user.setRole(userRole);
-
-        userRepository.save(user);
-
-        MessageResponseDTO response = new MessageResponseDTO();
-        response.setMessage("Usuario registrado con éxito");
-
-        return response;
     }
 
     /**
@@ -99,38 +122,46 @@ public class AuthService {
      * @return login response
      */
     public LoginResponseDTO login(LoginRequestDTO request) {
+        String ipKey = getClientIp() + ":login";
+        rateLimiterService.checkBlocked(ipKey);
 
-        Optional<User> optionalUser =
-                userRepository.findByEmail(request.getEmail());
+        try {
+            Optional<User> optionalUser =
+                    userRepository.findByEmail(request.getEmail());
 
-        if (optionalUser.isEmpty()) {
-            throw new RuntimeException("Usuario no encontrado.");
+            if (optionalUser.isEmpty()) {
+                throw new RuntimeException("Usuario no encontrado.");
+            }
+
+            User user = optionalUser.get();
+
+            if (!passwordEncoder.matches(
+                    request.getPassword(),
+                    user.getPassword())) {
+
+                throw new RuntimeException("Contraseña incorrecta.");
+            }
+
+            String token = jwtService.generateToken(
+                    user.getId(),
+                    user.getName(),
+                    user.getRole().name());
+
+            LoginResponseDTO response = new LoginResponseDTO();
+            response.setMessage("Login successful");
+            response.setToken(token);
+            response.setUserId(user.getId());
+            response.setName(user.getName());
+            response.setEmail(user.getEmail());
+            response.setUsername(user.getUsername());
+            response.setRole(user.getRole().name());
+
+            rateLimiterService.resetAttempts(ipKey);
+            return response;
+        } catch (RuntimeException e) {
+            rateLimiterService.recordFailedAttempt(ipKey);
+            throw e;
         }
-
-        User user = optionalUser.get();
-
-        if (!passwordEncoder.matches(
-                request.getPassword(),
-                user.getPassword())) {
-
-            throw new RuntimeException("Contraseña incorrecta.");
-        }
-
-        String token = jwtService.generateToken(
-                user.getId(),
-                user.getName(),
-                user.getRole().name());
-
-        LoginResponseDTO response = new LoginResponseDTO();
-        response.setMessage("Login successful");
-        response.setToken(token);
-        response.setUserId(user.getId());
-        response.setName(user.getName());
-        response.setEmail(user.getEmail());
-        response.setUsername(user.getUsername());
-        response.setRole(user.getRole().name());
-
-        return response;
     }
 
     /**
@@ -140,30 +171,39 @@ public class AuthService {
      * @return login response
      */
     public LoginResponseDTO rfidLogin(RfidLoginRequestDTO request) {
-        Optional<User> optionalUser =
-                userRepository.findByRfidUid(request.getRfidUid());
+        String ipKey = getClientIp() + ":login";
+        rateLimiterService.checkBlocked(ipKey);
 
-        if (optionalUser.isEmpty()) {
-            throw new RuntimeException("Tarjeta RFID no asociada a ningún usuario");
+        try {
+            Optional<User> optionalUser =
+                    userRepository.findByRfidUid(request.getRfidUid());
+
+            if (optionalUser.isEmpty()) {
+                throw new RuntimeException("Tarjeta RFID no asociada a ningún usuario");
+            }
+
+            User user = optionalUser.get();
+
+            String token = jwtService.generateToken(
+                    user.getId(),
+                    user.getName(),
+                    user.getRole().name());
+
+            LoginResponseDTO response = new LoginResponseDTO();
+            response.setMessage("Login successful via RFID");
+            response.setToken(token);
+            response.setUserId(user.getId());
+            response.setName(user.getName());
+            response.setEmail(user.getEmail());
+            response.setUsername(user.getUsername());
+            response.setRole(user.getRole().name());
+
+            rateLimiterService.resetAttempts(ipKey);
+            return response;
+        } catch (RuntimeException e) {
+            rateLimiterService.recordFailedAttempt(ipKey);
+            throw e;
         }
-
-        User user = optionalUser.get();
-
-        String token = jwtService.generateToken(
-                user.getId(),
-                user.getName(),
-                user.getRole().name());
-
-        LoginResponseDTO response = new LoginResponseDTO();
-        response.setMessage("Login successful via RFID");
-        response.setToken(token);
-        response.setUserId(user.getId());
-        response.setName(user.getName());
-        response.setEmail(user.getEmail());
-        response.setUsername(user.getUsername());
-        response.setRole(user.getRole().name());
-
-        return response;
     }
 
     /**
@@ -173,60 +213,86 @@ public class AuthService {
      * @return response message
      */
     public MessageResponseDTO recoverPassword(RecoverPasswordRequestDTO request) {
-        Optional<User> optionalUser =
-                userRepository.findByEmail(request.getEmail());
+        String ipKey = getClientIp() + ":recover";
+        rateLimiterService.checkBlocked(ipKey);
 
-        if (optionalUser.isEmpty()) {
-            throw new RuntimeException("Usuario no encontrado");
+        try {
+            Optional<User> optionalUser =
+                    userRepository.findByEmail(request.getEmail());
+
+            if (optionalUser.isEmpty()) {
+                throw new RuntimeException("Usuario no encontrado");
+            }
+
+            User user = optionalUser.get();
+            // Encrypt the new password securely
+            String encryptedPassword = passwordEncoder.encode(request.getNewPassword());
+            user.setPassword(encryptedPassword);
+            userRepository.save(user);
+
+            // Send functional password recovery email
+            emailService.sendPasswordRecoveryEmail(user.getEmail(), user.getName(), request.getNewPassword());
+
+            MessageResponseDTO response = new MessageResponseDTO();
+            response.setMessage("Contraseña restablecida y guardada correctamente. Se envió confirmación al correo.");
+            
+            rateLimiterService.resetAttempts(ipKey);
+            return response;
+        } catch (RuntimeException e) {
+            rateLimiterService.recordFailedAttempt(ipKey);
+            throw e;
         }
-
-        User user = optionalUser.get();
-        // Encrypt the new password securely
-        String encryptedPassword = passwordEncoder.encode(request.getNewPassword());
-        user.setPassword(encryptedPassword);
-        userRepository.save(user);
-
-        // Send functional password recovery email
-        emailService.sendPasswordRecoveryEmail(user.getEmail(), user.getName(), request.getNewPassword());
-
-        MessageResponseDTO response = new MessageResponseDTO();
-        response.setMessage("Contraseña restablecida y guardada correctamente. Se envió confirmación al correo.");
-        return response;
     }
 
     public MessageResponseDTO requestRecoveryCode(String email) {
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-        if (optionalUser.isEmpty()) {
-            throw new RuntimeException("Usuario no registrado con ese correo.");
+        String ipKey = getClientIp() + ":recover";
+        rateLimiterService.checkBlocked(ipKey);
+
+        try {
+            Optional<User> optionalUser = userRepository.findByEmail(email);
+            if (optionalUser.isEmpty()) {
+                throw new RuntimeException("Usuario no registrado con ese correo.");
+            }
+            User user = optionalUser.get();
+
+            // Generate 6-digit code
+            String code = String.format("%06d", new Random().nextInt(1000000));
+            recoveryCodes.put(email, code);
+
+            // Send recovery code email
+            boolean sent = emailService.sendRecoveryCodeEmail(user.getEmail(), user.getName(), code);
+
+            MessageResponseDTO response = new MessageResponseDTO();
+            if (sent) {
+                response.setMessage("Código de verificación enviado al correo.");
+            } else {
+                log.info("CÓDIGO DE VERIFICACIÓN GENERADO (Mailgun no configurado): {} para {}", code, email);
+                response.setMessage("Código de verificación enviado (simulado en consola del servidor).");
+            }
+            return response;
+        } catch (RuntimeException e) {
+            rateLimiterService.recordFailedAttempt(ipKey);
+            throw e;
         }
-        User user = optionalUser.get();
-
-        // Generate 6-digit code
-        String code = String.format("%06d", new Random().nextInt(1000000));
-        recoveryCodes.put(email, code);
-
-        // Send recovery code email
-        boolean sent = emailService.sendRecoveryCodeEmail(user.getEmail(), user.getName(), code);
-
-        MessageResponseDTO response = new MessageResponseDTO();
-        if (sent) {
-            response.setMessage("Código de verificación enviado al correo.");
-        } else {
-            log.info("CÓDIGO DE VERIFICACIÓN GENERADO (Mailgun no configurado): {} para {}", code, email);
-            response.setMessage("Código de verificación enviado (simulado en consola del servidor).");
-        }
-        return response;
     }
 
     public MessageResponseDTO verifyRecoveryCode(String email, String code) {
-        String savedCode = recoveryCodes.get(email);
-        if (savedCode == null || !savedCode.equals(code)) {
-            throw new RuntimeException("Código de verificación inválido");
-        }
+        String ipKey = getClientIp() + ":recover";
+        rateLimiterService.checkBlocked(ipKey);
 
-        MessageResponseDTO response = new MessageResponseDTO();
-        response.setMessage("Código verificado correctamente.");
-        return response;
+        try {
+            String savedCode = recoveryCodes.get(email);
+            if (savedCode == null || !savedCode.equals(code)) {
+                throw new RuntimeException("Código de verificación inválido");
+            }
+
+            MessageResponseDTO response = new MessageResponseDTO();
+            response.setMessage("Código verificado correctamente.");
+            return response;
+        } catch (RuntimeException e) {
+            rateLimiterService.recordFailedAttempt(ipKey);
+            throw e;
+        }
     }
 
     /**

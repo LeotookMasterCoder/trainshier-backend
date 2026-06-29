@@ -40,6 +40,11 @@ public class EmailService {
             return;
         }
 
+        String senderFrom = from;
+        if (senderFrom.contains("sandbox.mailgun.org") && !domain.contains("sandbox.mailgun.org")) {
+            senderFrom = "TrainShier <postmaster@" + domain + ">";
+        }
+
         try {
             String url = baseUrl + "/" + domain + "/messages";
 
@@ -52,7 +57,7 @@ public class EmailService {
             headers.set("Authorization", authHeader);
 
             MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-            body.add("from", from);
+            body.add("from", senderFrom);
             body.add("to", recipientEmail);
             body.add("subject", "Restablecimiento de Contraseña - TrainShier");
             body.add("text", String.format(
@@ -70,7 +75,7 @@ public class EmailService {
             if (response.getStatusCode().is2xxSuccessful()) {
                 log.info("Correo enviado exitosamente a {} (API Mailgun)", maskedEmail);
             } else {
-                log.error("Fallo al enviar correo. Código de respuesta: {}", response.getStatusCode());
+                log.error("Fallo al enviar correo. Código de respuesta: {}. Respuesta: {}", response.getStatusCode(), response.getBody());
             }
         } catch (Exception e) {
             log.error("Error al enviar correo de recuperación vía Mailgun API a {}: {}", maskedEmail, e.getMessage(), e);
@@ -87,6 +92,11 @@ public class EmailService {
             return false;
         }
 
+        String senderFrom = from;
+        if (senderFrom.contains("sandbox.mailgun.org") && !domain.contains("sandbox.mailgun.org")) {
+            senderFrom = "TrainShier <postmaster@" + domain + ">";
+        }
+
         try {
             String url = baseUrl + "/" + domain + "/messages";
 
@@ -99,7 +109,7 @@ public class EmailService {
             headers.set("Authorization", authHeader);
 
             MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-            body.add("from", from);
+            body.add("from", senderFrom);
             body.add("to", recipientEmail);
             body.add("subject", "Código de Recuperación de Contraseña - TrainShier");
             body.add("text", String.format(
@@ -118,7 +128,7 @@ public class EmailService {
                 log.info("Código enviado exitosamente a {} (API Mailgun)", maskedEmail);
                 return true;
             } else {
-                log.error("Fallo al enviar código de recuperación. Código de respuesta: {}", response.getStatusCode());
+                log.error("Fallo al enviar código de recuperación. Código de respuesta: {}. Respuesta: {}", response.getStatusCode(), response.getBody());
             }
         } catch (Exception e) {
             log.error("Error al enviar código de recuperación vía Mailgun API a {}: {}", maskedEmail, e.getMessage(), e);
