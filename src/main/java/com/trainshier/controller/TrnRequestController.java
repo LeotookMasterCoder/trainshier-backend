@@ -38,6 +38,12 @@ public class TrnRequestController {
                         .body(Map.of("message", "El instructor seleccionado no existe."));
             }
 
+            // Check if user already has an account
+            if (userRepository.findByEmail(studentEmail).isPresent()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "El correo electrónico ya está registrado en el sistema. Inicia sesión directamente."));
+            }
+
             // Check if there is already a request for this email
             Optional<TrnRequest> existingOpt = trnRequestRepository.findByStudentEmail(studentEmail);
             TrnRequest trnRequest;

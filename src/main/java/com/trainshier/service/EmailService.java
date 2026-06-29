@@ -77,14 +77,14 @@ public class EmailService {
         }
     }
 
-    public void sendRecoveryCodeEmail(String recipientEmail, String recipientName, String code) {
+    public boolean sendRecoveryCodeEmail(String recipientEmail, String recipientName, String code) {
         // Protect personal data / privacy in logs
         String maskedEmail = recipientEmail.replaceAll("(?<=.{3}).(?=[^@]*?.@)", "*");
         log.info("Enviando código de recuperación a: {}", maskedEmail);
 
         if (apiKey == null || apiKey.trim().isEmpty() || domain == null || domain.trim().isEmpty()) {
             log.warn("Credenciales de Mailgun no configuradas. El código de recuperación {} para {} se simula en consola.", code, maskedEmail);
-            return;
+            return false;
         }
 
         try {
@@ -116,11 +116,13 @@ public class EmailService {
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 log.info("Código enviado exitosamente a {} (API Mailgun)", maskedEmail);
+                return true;
             } else {
                 log.error("Fallo al enviar código de recuperación. Código de respuesta: {}", response.getStatusCode());
             }
         } catch (Exception e) {
             log.error("Error al enviar código de recuperación vía Mailgun API a {}: {}", maskedEmail, e.getMessage(), e);
         }
+        return false;
     }
 }

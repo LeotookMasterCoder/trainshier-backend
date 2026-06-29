@@ -50,7 +50,7 @@ public class AuthService {
     public MessageResponseDTO register(RegisterRequestDTO request) {
 
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists");
+            throw new RuntimeException("El correo electrónico ya está registrado.");
         }
 
         if (request.getUsername() != null && request.getUsername().contains("#")) {
@@ -85,7 +85,7 @@ public class AuthService {
         userRepository.save(user);
 
         MessageResponseDTO response = new MessageResponseDTO();
-        response.setMessage("User registered successfully");
+        response.setMessage("Usuario registrado con éxito");
 
         return response;
     }
@@ -102,7 +102,7 @@ public class AuthService {
                 userRepository.findByEmail(request.getEmail());
 
         if (optionalUser.isEmpty()) {
-            throw new RuntimeException("User not found");
+            throw new RuntimeException("Usuario no encontrado.");
         }
 
         User user = optionalUser.get();
@@ -111,7 +111,7 @@ public class AuthService {
                 request.getPassword(),
                 user.getPassword())) {
 
-            throw new RuntimeException("Invalid password");
+            throw new RuntimeException("Contraseña incorrecta.");
         }
 
         String token = jwtService.generateToken(
@@ -195,7 +195,7 @@ public class AuthService {
     public MessageResponseDTO requestRecoveryCode(String email) {
         Optional<User> optionalUser = userRepository.findByEmail(email);
         if (optionalUser.isEmpty()) {
-            throw new RuntimeException("Usuario no encontrado");
+            throw new RuntimeException("Usuario no registrado con ese correo.");
         }
         User user = optionalUser.get();
 
@@ -204,10 +204,14 @@ public class AuthService {
         recoveryCodes.put(email, code);
 
         // Send recovery code email
-        emailService.sendRecoveryCodeEmail(user.getEmail(), user.getName(), code);
+        boolean sent = emailService.sendRecoveryCodeEmail(user.getEmail(), user.getName(), code);
 
         MessageResponseDTO response = new MessageResponseDTO();
-        response.setMessage("Código de verificación enviado.");
+        if (sent) {
+            response.setMessage("Código de verificación enviado al correo.");
+        } else {
+            response.setMessage("Código de verificación generado: " + code + " (simulado en pantalla, credenciales Mailgun no configuradas).");
+        }
         return response;
     }
 
