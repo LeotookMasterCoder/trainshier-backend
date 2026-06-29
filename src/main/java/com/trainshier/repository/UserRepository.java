@@ -27,4 +27,8 @@ public interface UserRepository
      * @return optional user
      */
     Optional<User> findByRfidUid(String rfidUid);
+
+    boolean existsByUsername(String username);
+
+    boolean existsByUsernameEndingWith(String suffix);
 }

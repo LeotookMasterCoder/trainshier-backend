@@ -23,6 +23,8 @@ public class RegisterRequestDTO {
     @Email(message = "Invalid email")
     private String email;
 
+    private String username;
+
     @NotBlank(message = "Password is required")
     @Size(min = 6, message = "Password must contain at least 6 characters")
     private String password;

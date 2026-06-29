@@ -39,9 +39,12 @@ public class UserService {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("El correo ya está registrado");
         }
+        validateUsername(request.getUsername(), null);
+
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
+        user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole() != null ? request.getRole() : UserRole.APPRENTICE);
         user.setRfidUid(request.getRfidUid());
@@ -68,9 +71,13 @@ public class UserService {
         if (emailCheck.isPresent() && !emailCheck.get().getId().equals(id)) {
             throw new RuntimeException("El correo ya está en uso por otro usuario");
         }
+        validateUsername(request.getUsername(), id);
 
         user.setName(request.getName());
         user.setEmail(request.getEmail());
+        if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
+            user.setUsername(request.getUsername());
+        }
         userRepository.save(user);
         return mapToDTO(user);
     }
@@ -80,9 +87,12 @@ public class UserService {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("El correo ya está registrado");
         }
+        validateUsername(request.getUsername(), null);
+
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
+        user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(UserRole.INSTRUCTOR);
         user.setRfidUid(request.getRfidUid());
@@ -96,9 +106,12 @@ public class UserService {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("El correo ya está registrado");
         }
+        validateUsername(request.getUsername(), null);
+
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
+        user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole() != null ? request.getRole() : UserRole.INSTRUCTOR);
         user.setRfidUid(request.getRfidUid());
@@ -116,9 +129,13 @@ public class UserService {
         if (emailCheck.isPresent() && !emailCheck.get().getId().equals(id)) {
             throw new RuntimeException("El correo ya está en uso por otro usuario");
         }
+        validateUsername(request.getUsername(), id);
 
         user.setName(request.getName());
         user.setEmail(request.getEmail());
+        if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
+            user.setUsername(request.getUsername());
+        }
         if (request.getRole() != null) {
             user.setRole(request.getRole());
         }
@@ -203,6 +220,24 @@ public class UserService {
         return new MessageResponseDTO("Solicitud " + status + " correctamente");
     }
 
+    private void validateUsername(String username, Long excludeUserId) {
+        if (username == null || username.trim().isEmpty()) {
+            return;
+        }
+        if (username.contains("#")) {
+            String suffix = username.substring(username.indexOf("#"));
+            List<User> list = userRepository.findAll();
+            for (User u : list) {
+                if (excludeUserId != null && u.getId().equals(excludeUserId)) {
+                    continue;
+                }
+                if (u.getUsername() != null && u.getUsername().endsWith(suffix)) {
+                    throw new RuntimeException("El numeral con los números ya está en uso.");
+                }
+            }
+        }
+    }
+
     // -----------------------------------------------------------------------
     // MAPPING
     // -----------------------------------------------------------------------
@@ -212,6 +247,7 @@ public class UserService {
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
+                user.getUsername(),
                 user.getRole(),
                 user.getRfidUid(),
                 user.getActive() != null ? user.getActive() : true

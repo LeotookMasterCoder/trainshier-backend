@@ -53,9 +53,20 @@ public class AuthService {
             throw new RuntimeException("Email already exists");
         }
 
+        if (request.getUsername() != null && request.getUsername().contains("#")) {
+            String suffix = request.getUsername().substring(request.getUsername().indexOf("#"));
+            java.util.List<User> list = userRepository.findAll();
+            for (User u : list) {
+                if (u.getUsername() != null && u.getUsername().endsWith(suffix)) {
+                    throw new RuntimeException("El numeral con los números ya está en uso.");
+                }
+            }
+        }
+
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
+        user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         
         UserRole userRole = UserRole.APPRENTICE;
@@ -113,6 +124,8 @@ public class AuthService {
         response.setToken(token);
         response.setUserId(user.getId());
         response.setName(user.getName());
+        response.setEmail(user.getEmail());
+        response.setUsername(user.getUsername());
         response.setRole(user.getRole().name());
 
         return response;
@@ -144,6 +157,8 @@ public class AuthService {
         response.setToken(token);
         response.setUserId(user.getId());
         response.setName(user.getName());
+        response.setEmail(user.getEmail());
+        response.setUsername(user.getUsername());
         response.setRole(user.getRole().name());
 
         return response;
@@ -235,7 +250,7 @@ public class AuthService {
     public List<UserResponseDTO> getPublicInstructors() {
         return userRepository.findAll().stream()
                 .filter(u -> u.getRole() == UserRole.INSTRUCTOR)
-                .map(u -> new UserResponseDTO(u.getId(), u.getName(), u.getEmail(), u.getRole(), u.getRfidUid(), u.getActive()))
+                .map(u -> new UserResponseDTO(u.getId(), u.getName(), u.getEmail(), u.getUsername(), u.getRole(), u.getRfidUid(), u.getActive() != null ? u.getActive() : true))
                 .collect(Collectors.toList());
     }
 }

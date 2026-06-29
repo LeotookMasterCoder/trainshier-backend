@@ -24,6 +24,11 @@ public class UpdateUserRequestDTO {
     private String email;
 
     /**
+     * User username.
+     */
+    private String username;
+
+    /**
      * User role.
      */
     private com.trainshier.enums.UserRole role;

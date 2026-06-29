@@ -25,6 +25,8 @@ public class UserRequestDTO {
     @NotBlank
     private String email;
 
+    private String username;
+
     /**
      * User password.
      */
