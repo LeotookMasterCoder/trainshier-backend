@@ -30,3 +30,9 @@ mailgun:
   api-key: ${MAILGUN_API_KEY:}
   domain: ${MAILGUN_DOMAIN:}
   from: ${MAILGUN_FROM:TrainShier <postmaster@sandbox.mailgun.org>}
+
+resend:
+  api-key: ${RESEND_API_KEY:}
+
+brevo:
+  api-key: ${BREVO_API_KEY:}
