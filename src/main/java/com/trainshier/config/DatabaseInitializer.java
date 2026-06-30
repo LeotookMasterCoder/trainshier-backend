@@ -40,11 +40,16 @@ public class DatabaseInitializer implements CommandLineRunner {
         installCascadeTrigger();
 
         // 2. Guarantee essential accounts (admin + demo instructors + demo apprentice) always exist
-        ensureUser("admin@trainshier.com",        "Administrador Sistema",  "Admin123*",      UserRole.ADMINISTRATOR, "RFID-ADMIN-999");
-        ensureUser("instructor@trainshier.com",   "Instructor Principal",   "Instructor123*", UserRole.INSTRUCTOR,    "RFID-INSTRUCTOR-888");
+        ensureUser("admin@trainshier.com",        "Administrador Sistema",  "Admin123*",      UserRole.ADMINISTRATOR, "0013410739");
+        ensureUser("instructor@trainshier.com",   "Instructor Principal",   "Instructor123*", UserRole.INSTRUCTOR,    "0005908111");
         ensureUser("instructor2@trainshier.com",  "Laura Gómez",            "Instructor123*", UserRole.INSTRUCTOR,    "RFID-INSTRUCTOR-889");
         ensureUser("instructor3@trainshier.com",  "Andrés Molina",          "Instructor123*", UserRole.INSTRUCTOR,    "RFID-INSTRUCTOR-890");
-        ensureUser("aprendiz@trainshier.com",    "Aprendiz Demo",          "Aprendiz123*",   UserRole.APPRENTICE,    "RFID-APPRENTICE-777");
+        ensureUser("aprendiz@trainshier.com",    "Aprendiz Demo",          "Aprendiz123*",   UserRole.APPRENTICE,    "0002378679");
+
+        // Force update the RFID UIDs of demo accounts to match requirements
+        forceRfid("admin@trainshier.com", "0013410739");
+        forceRfid("instructor@trainshier.com", "0005908111");
+        forceRfid("aprendiz@trainshier.com", "0002378679");
 
         // 3. Migrate any plain-text passwords to BCrypt and ensure active=true
         List<User> users = userRepository.findAll();
@@ -97,6 +102,13 @@ public class DatabaseInitializer implements CommandLineRunner {
                 userRepository.save(user);
             }
         }
+    }
+
+    private void forceRfid(String email, String rfidUid) {
+        userRepository.findByEmail(email).ifPresent(user -> {
+            user.setRfidUid(rfidUid);
+            userRepository.save(user);
+        });
     }
 
     private void installCascadeTrigger() {
