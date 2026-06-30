@@ -39,6 +39,15 @@ public class DatabaseInitializer implements CommandLineRunner {
         // 1. Install cascading delete trigger for the English schema
         installCascadeTrigger();
 
+        // 1b. Ensure "iva" column exists in "products" and set realistic sample values
+        try {
+            jdbcTemplate.execute("ALTER TABLE products ADD COLUMN IF NOT EXISTS iva INTEGER DEFAULT 19");
+            jdbcTemplate.execute("UPDATE products SET iva = 0 WHERE LOWER(name) LIKE '%leche%' OR LOWER(name) LIKE '%huevo%' OR LOWER(name) LIKE '%pan%'");
+            jdbcTemplate.execute("UPDATE products SET iva = 5 WHERE LOWER(name) LIKE '%café%' OR LOWER(name) LIKE '%aceite%'");
+        } catch (Exception e) {
+            log.warn("Could not manage 'iva' column/updates on startup: {}", e.getMessage());
+        }
+
         // 2. Guarantee essential accounts (admin + demo instructors + demo apprentice) always exist
         ensureUser("admin@trainshier.com",        "Administrador Sistema",  "Admin123*",      UserRole.ADMINISTRATOR, "0013410739");
         ensureUser("instructor@trainshier.com",   "Instructor Principal",   "Instructor123*", UserRole.INSTRUCTOR,    "0005908111");

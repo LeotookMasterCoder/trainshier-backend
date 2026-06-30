@@ -28,6 +28,9 @@ public class Product {
     @Column(name = "active")
     private Boolean active;
 
+    @Column(name = "iva")
+    private Integer iva = 19;
+
     @ManyToOne
     @JoinColumn(name = "category_id")
     private Category category;
