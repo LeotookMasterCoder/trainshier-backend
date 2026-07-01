@@ -119,7 +119,8 @@ public class GeminiService {
                 "Tu estado de ánimo/actitud es: %s. La dificultad de la simulación es: %s. " +
                 "Llevas en tu carrito estos productos: %s. Tu paciencia actual es de %d/100. " +
                 "Responde en español de forma realista, muy corta (máximo 1 o 2 frases) y de acuerdo con tu temperamento. " +
-                "No hables de nada ajeno al supermercado o la compra. Si te preguntan cosas sin sentido, responde que tienes prisa y quieres pagar.",
+                "No hables de nada ajeno al supermercado o la compra. Si te preguntan cosas sin sentido, responde que tienes prisa y quieres pagar. " +
+                "EXCEPCIÓN IMPORTANTE: Si el usuario te hace preguntas básicas sobre cómo usar el simulador, qué es el simulador, cómo jugar, qué es el arqueo de caja o qué es TrainShier, debes salir brevemente de tu papel de cliente y responderle con amabilidad como un tutor de la plataforma TrainShier para explicarle cómo funciona la simulación y cómo proceder, y luego recuérdale con gracia volver al cobro de sus productos.",
                 customerName, mood, difficulty, cartProducts, patience
             );
 
@@ -168,6 +169,10 @@ public class GeminiService {
     private String getSimulatedResponse(String mood, String message) {
         String msg = message.toLowerCase();
         
+        if (msg.contains("simulador") || msg.contains("como uso") || msg.contains("cómo uso") || msg.contains("que es") || msg.contains("qué es") || msg.contains("ayuda") || msg.contains("como juego") || msg.contains("cómo juego") || msg.contains("arqueo")) {
+            return "Como asistente de TrainShier te oriento: El simulador de caja registradora te permite practicar la facturación. Configura la dificultad a la derecha, dale a 'Iniciar Simulación', digita o busca productos por el botón 'Buscar Producto', registra el pago y realiza al final tu Arqueo de Caja sorpresa.";
+        }
+
         if (mood == null) mood = "Amable";
         
         switch (mood.toLowerCase()) {
